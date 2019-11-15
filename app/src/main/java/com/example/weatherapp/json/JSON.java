@@ -25,7 +25,7 @@ public final class JSON {
         Number, String, Object, Array, Boolean, Null;
     }
 
-    static abstract class Value
+    public static abstract class Value
     {
         public final Type Type;
 
@@ -105,6 +105,8 @@ public final class JSON {
                 return (Array) this;
             throw new ClassCastException();
         }
+
+        public abstract java.lang.String toString();
     }
 
     public static final class Int extends Value
@@ -498,5 +500,15 @@ public final class JSON {
             out += "]";
             return out;
         }
+    }
+
+    public static JSON.Value parse(java.lang.String in)
+    {
+        return Parser.parseValue(in);
+    }
+
+    public static java.lang.String stringify(JSON.Value val)
+    {
+        return val.toString();
     }
 }

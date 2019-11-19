@@ -1,4 +1,4 @@
-package com.example.weatherapp.json;
+package com.avyay.json;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;

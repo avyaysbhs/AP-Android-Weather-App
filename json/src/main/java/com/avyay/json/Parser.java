@@ -1,8 +1,12 @@
-package com.example.weatherapp.json;
+package com.avyay.json;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.String;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Stack;
 import java.util.regex.Pattern;
 
 
@@ -36,6 +40,14 @@ final class Parser {
         return null;
     }
 
+    private static HashMap<Character, Character> closer = new HashMap<>();
+    static {
+        closer.put('{', '}');
+        closer.put('[', ']');
+        closer.put('\"', '\"');
+        closer.put('\'', '\'');
+    }
+
     static JSON.Object parseObject(String source)
     {
         JSON.Object out = new JSON.Object();
@@ -45,6 +57,7 @@ final class Parser {
             int layer = 0;
             if (!reader.ready())
                 return null;
+
             int ch = reader.read();
 
             /**
@@ -55,23 +68,26 @@ final class Parser {
             int stage = -1;
             StringBuilder key = new StringBuilder();
             StringBuilder value = new StringBuilder();
-            boolean set_encloser = false;
-            char encloser;
+            Stack<Character> enclosers = new Stack<>();
+            boolean start_value = false;
 
             while ((ch = reader.read()) != -1)
             {
                 char current = (char) ch;
 
-                if (current == '\"') {
+                if (current == '\"' && stage != 1) {
                     if (stage == -1)
                     {
                         stage = 0;
                     } else if (stage == 0)
                     {
                         stage = 1;
-                        set_encloser = true;
+                        start_value = true;
                     }
                     continue;
+                } else if (current == '}' && enclosers.size() == 0)
+                {
+                    return out;
                 }
 
                 switch (stage)
@@ -81,18 +97,38 @@ final class Parser {
                         break;
                     }
                     case 1: {
-                        if (set_encloser) {
-                            if (current == ':')
+                        if (start_value) {
+                            if (current == ':') {
                                 value = new StringBuilder();
-                            else if (current == '[' || current == '{' || current == '\"') {
-                                set_encloser = false;
-                                encloser = current;
+                                continue;
+                            }
+                            else if (current == '[' || current == '{' || current == '\"' || current == '\'') {
+                                start_value = false;
+                                enclosers.push(current);
                             } else
                             {
                                 value.append(current);
                             }
-                        } else
+                        }
+
+                        if (current != closer.get(enclosers.firstElement()))
                             value.append(current);
+                        else
+                        {
+                            enclosers.pop();
+                            java.lang.String _k = key.toString();
+                            java.lang.String _v = value.toString();
+
+                            out.put(_k, parseValue(_v));
+                            System.out.println(_k);
+
+                            key = new StringBuilder();
+                            value = new StringBuilder();
+
+                            try {
+                                Thread.sleep(400);
+                            } catch (Exception e) {}
+                        }
                         break;
                     }
                 }
@@ -102,13 +138,13 @@ final class Parser {
         finally {
             reader.close();
         }
-        return null;
+        return out;
     }
 
     static JSON.Array parseArray(String source)
     {
         // TODO implement
-        return null;
+        return new JSON.Array();
     }
 
     static JSON.String parseString(String source)
@@ -118,7 +154,7 @@ final class Parser {
 
     static JSON.Value parseNumber(String source)
     {
-        if (source.contains("."))
+        if (source.contains(""))
             return new JSON.Float(Float.parseFloat(source));
         return new JSON.Int(Integer.parseInt(source));
     }

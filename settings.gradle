@@ -1,2 +1,2 @@
-include ':app'
+include ':app', ':json'
 rootProject.name='Weather App'

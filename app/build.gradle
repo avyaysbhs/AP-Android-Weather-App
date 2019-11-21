@@ -1,3 +1,5 @@
+import java.nio.file.Paths
+
 apply plugin: 'com.android.application'
 
 android {
@@ -27,3 +29,14 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 }
+
+task deleteJSONJar(type: Delete) {
+    delete("libs/avyay-json.jar")
+}
+
+task createJSONJar(type: Copy) {
+    from(Paths.get(projectDir.getAbsolutePath()).resolve("json/build/libs/json.jar"))
+    into("libs/")
+}
+
+createJSONJar.dependsOn(deleteJSONJar, build)

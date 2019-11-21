@@ -3,9 +3,9 @@ package com.avyay.json;
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.String;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Stack;
 import java.util.regex.Pattern;
 
@@ -48,89 +48,157 @@ final class Parser {
         closer.put('\'', '\'');
     }
 
+    private static List<Character> parenthesis_open = Arrays.asList(new Character[] {'{', '[', '\''});
+    private static List<Character> parenthesis_closed = Arrays.asList(new Character[] {'}', ']', '\''});
+
+    private static class JSONObjectBuilder
+    {
+        /**
+         * @field stage
+         * @param -1 = halted
+         * @param 0 = read open quote
+         * @param 1 = construct keyBuilder
+         * @param 2 = read opening character for value
+         * @param 3 = construct valueBuilder
+         * @param 4 = flush
+         */
+        private int stage = 0;
+        private JSON.Object out = new JSON.Object();
+        private volatile StringBuilder keyBuilder;
+        private volatile StringBuilder valueBuilder;
+        private Stack<Character> enclosers = new Stack<>();
+        private final char opening_encloser;
+
+        public JSONObjectBuilder(char first)
+        {
+            opening_encloser = first;
+            refresh();
+        }
+
+        public void refresh()
+        {
+            keyBuilder = new StringBuilder();
+            valueBuilder = new StringBuilder();
+        }
+
+        public void append()
+        {
+            out.put(keyBuilder.toString(), parseValue(valueBuilder.toString()));
+        }
+
+        public void readKey(char c)
+        {
+            if (c == '\"') {
+                stage++;
+                return;
+            }
+            keyBuilder.append(c);
+        }
+
+        /* TODO
+            figure out what the heck is going on in this method because every test case of adding
+            characters to the StringBuilder works, but actual implementation for some reason does
+            not and it's really annoying - Avyay
+         */
+        public void readValue(char c)
+        {
+            if (parenthesis_open.contains(c))
+                enclosers.push(c);
+            if (enclosers.size() > 0) {
+                System.out.println(enclosers + (enclosers.size() > 0 ? " > " + matching_closer(enclosers.peek()) : "") + " ?=" + c);
+
+                if (c == matching_closer(enclosers.peek())) {
+                    valueBuilder.append(c);
+                    enclosers.pop();
+                }
+
+                System.out.println(valueBuilder);
+                if (enclosers.size() == 0) {
+                    stage++;
+                    return;
+                }
+            } else valueBuilder.append(c);
+        }
+
+        private static char matching_closer(char c)
+        {
+            return parenthesis_closed.get(parenthesis_open.indexOf(c));
+        }
+
+        private static char matching_opener(char c)
+        {
+            return parenthesis_open.get(parenthesis_closed.indexOf(c));
+        }
+
+        public void read(char c)
+        {
+            //System.out.print("pre_stage=" + stage + ", char=" + c);
+            switch (stage)
+            {
+                case 0:
+                {
+                    if (c == '\"')
+                    stage++;
+                    break;
+                }
+                case 1:
+                {
+                    readKey(c);
+                    break;
+                }
+                case 2:
+                {
+                    if (c == ':')
+                        stage++;
+                    break;
+                }
+                case 3:
+                {
+                    readValue(c);
+                    break;
+                }
+                case 4:
+                {
+                    if (c == ',') {
+                        stage = 0;
+                        append();
+                        refresh();
+                    } else if (c == matching_closer(opening_encloser))
+                    {
+                        append();
+                        refresh();
+                    }
+                }
+            }
+            //System.out.println(", post_stage=" + stage);
+        }
+
+        public JSON.Object product()
+        {
+            return out;
+        }
+    }
+
     static JSON.Object parseObject(String source)
     {
-        JSON.Object out = new JSON.Object();
+        JSONObjectBuilder builder = null;
         StringReader reader = new StringReader(source);
         try
         {
-            int layer = 0;
-            if (!reader.ready())
-                return null;
-
+            if (!reader.ready()) return null;
             int ch = reader.read();
+            builder = new JSONObjectBuilder((char) ch);
 
-            /**
-             * stage:
-             * 0 = reading key
-             * 1 = reading value
-             */
             int stage = -1;
             StringBuilder key = new StringBuilder();
             StringBuilder value = new StringBuilder();
-            Stack<Character> enclosers = new Stack<>();
-            boolean start_value = false;
 
-            while ((ch = reader.read()) != -1)
+            while (ch != -1)
             {
+                ch = reader.read();
                 char current = (char) ch;
-
-                if (current == '\"' && stage != 1) {
-                    if (stage == -1)
-                    {
-                        stage = 0;
-                    } else if (stage == 0)
-                    {
-                        stage = 1;
-                        start_value = true;
-                    }
-                    continue;
-                } else if (current == '}' && enclosers.size() == 0)
-                {
-                    return out;
-                }
-
-                switch (stage)
-                {
-                    case 0: {
-                        key.append(current);
-                        break;
-                    }
-                    case 1: {
-                        if (start_value) {
-                            if (current == ':') {
-                                value = new StringBuilder();
-                                continue;
-                            }
-                            else if (current == '[' || current == '{' || current == '\"' || current == '\'') {
-                                start_value = false;
-                                enclosers.push(current);
-                            } else
-                            {
-                                value.append(current);
-                            }
-                        }
-
-                        if (current != closer.get(enclosers.firstElement()))
-                            value.append(current);
-                        else
-                        {
-                            enclosers.pop();
-                            java.lang.String _k = key.toString();
-                            java.lang.String _v = value.toString();
-
-                            out.put(_k, parseValue(_v));
-                            System.out.println(_k);
-
-                            key = new StringBuilder();
-                            value = new StringBuilder();
-
-                            try {
-                                Thread.sleep(400);
-                            } catch (Exception e) {}
-                        }
-                        break;
-                    }
+                synchronized (builder) {
+                    builder.read(current);
                 }
             }
         }
@@ -138,7 +206,7 @@ final class Parser {
         finally {
             reader.close();
         }
-        return out;
+        return builder.product();
     }
 
     static JSON.Array parseArray(String source)

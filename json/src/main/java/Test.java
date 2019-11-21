@@ -7,6 +7,6 @@ public class Test {
                 "\"a\":{" +
                 "\"b\":4}" +
                 "}").asObject();
-        System.out.println(a.get("a").asObject().get("b").asInt().value());
+        System.out.println(a.get("a"));//.asObject());//.get("b").asInt().value());
     }
 }

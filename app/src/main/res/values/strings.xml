@@ -41,6 +41,26 @@
             "c": 3
         }
     </string>
+    <string-array name="test_array">
+        <item>John Wick</item>
+        <item>Bon Rick</item>
+        <item>Ron Sick</item>
+        <item>Dawn Mick</item>
+    </string-array>
+    <string-array name="test_array_2">
+        <item>ABCD</item>
+        <item>ABCE</item>
+        <item>ACCE</item>
+        <item>ACDE</item>
+        <item>BCDE</item>
+        <item>BDEF</item>
+        <item>CEEG</item>
+        <item>DEFH</item>
+        <item>DFFH</item>
+        <item>DFGH</item>
+        <item>EFGH</item>
+        <item>FGHI</item>
+    </string-array>
     <string name="portrait_button">Portrait Button</string>
     <string name="landscape_button">Landscape Button</string>
 </resources>

@@ -1,67 +1,42 @@
 package com.example.weatherapp;
 
-import android.content.res.Configuration;
+import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends AppCompatActivity {
-
-    public final static String COUNTER_KEY = "count";
-    public static MainActivity MAIN;
-    int counter;
-
-    boolean isLandscape()
-    {
-        return getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
-    }
+public class MainActivity extends AppCompatActivity
+{
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (savedInstanceState != null)
-            counter = savedInstanceState.getInt(COUNTER_KEY);
-        Log.d("TAG", "Create");
+        setContentView(R.layout.activity_main);
 
-        MAIN = this;
+        LayoutInflater layoutInflater = (LayoutInflater) getLayoutInflater();
+        ListView listView = findViewById(R.id.listView);
 
-        setContentView(isLandscape() ? R.layout.horizontal_layout : R.layout.vertical_layout);
-        //JSON.Object json = (JSON.Object) JSON.parse(getResources().getString(R.string.json_simple_object_example));
+        ArrayAdapter<String> names = new ArrayAdapter<>(
+            this,
+            R.layout.activity_main, R.id.textView,
+            getResources().getStringArray(R.array.test_array_2)
+        );
 
-        TextView view = findViewById(R.id.string_display);
-
-        if (view != null) {
-            setup(view);
-        } else {
-            setup((TextView) findViewById(R.id.textView_horizontal));
-        }
+        listView.setAdapter(names);
     }
 
-    private void setup(final TextView view)
+    public void onClick(View v)
     {
-        view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                counter++;
-                view.setText("Count: " + counter);
-            }
-        });
-        view.setText("Count: " + counter);
+        Toast.makeText(this, ((TextView) v).getText(), Toast.LENGTH_SHORT).show();
     }
 
-    protected void onResume()
-    {
-        super.onResume();
-        Log.d("TAG", "Resume");
-    }
-
-    @Override
-    protected void onSaveInstanceState(@NonNull Bundle outState) {
-        outState.putInt("count", counter);
-        super.onSaveInstanceState(outState);
-    }
 }
